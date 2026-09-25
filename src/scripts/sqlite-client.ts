@@ -1,30 +1,22 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as SQLite from "expo-sqlite";
 
+let dbInstance: SQLite.SQLiteDatabase | null = null;
+
 export async function copiarGtfsSiHaceFalta() {
-    const carpetaSqlite = FileSystem.documentDirectory + 'SQLite/';
-    const destino = carpetaSqlite + 'gtfs.db';
-    const pragma =  process.env.EXPO_PUBLIC_PRAGMA;
-    alert(pragma)
-    if ((await FileSystem.getInfoAsync(destino)).exists) return; // ya está, no repetir
+    const destino = FileSystem.documentDirectory + 'SQLite/gtfs.db';
+    if ((await FileSystem.getInfoAsync(destino)).exists) return; // esto SÍ se salta bien
 
-    await FileSystem.makeDirectoryAsync(carpetaSqlite, { intermediates: true });
-    await FileSystem.copyAsync({
-        from: 'file:///sdcard/Android/data/com.sigma.urbia/files/gtfs.db',
-        to: destino,
-    });
-    const db = await SQLite.openDatabaseAsync('gtfs.db');
-    await db.execAsync(`PRAGMA ${pragma}`);
-
-
-
-    const tablas = await db.getAllAsync(`
-      SELECT name
-      FROM sqlite_master
-      WHERE type = 'table';
-    `);
-
-    console.log("TABLAS:", tablas);
+    await FileSystem.makeDirectoryAsync(FileSystem.documentDirectory + 'SQLite/', { intermediates: true });
+    await FileSystem.copyAsync({ from: 'file:///sdcard/Android/data/com.sigma.urbia/files/gtfs.db', to: destino });
 
 }
 
+export async function getDb(): Promise<SQLite.SQLiteDatabase> {
+    if (dbInstance) return dbInstance;
+    const clave = process.env.EXPO_PUBLIC_PRAGMA;
+    const db = await SQLite.openDatabaseAsync('gtfs.db');
+    await db.execAsync(`PRAGMA key = '${clave}'`);
+    dbInstance = db;
+    return dbInstance;
+}
