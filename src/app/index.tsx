@@ -1,7 +1,9 @@
 import * as Device from 'expo-device';
-import {Camera, MapView, StyleImport} from '@rnmapbox/maps';
+import {Camera, MapView, Rain, StyleImport} from '@rnmapbox/maps';
 import {useEffect, useState} from "react";
-
+import {copiarGtfsSiHaceFalta} from "@/scripts/sqlite-client";
+import * as SQLite from 'expo-sqlite';
+import Database from '@signalapp/sqlcipher';
 export default function HomeScreen() {
 
   const getLightPreset = (date: Date): LightPreset =>  {
@@ -9,17 +11,16 @@ export default function HomeScreen() {
     if(date.getHours() >= 20 || date.getHours() < 6){
       return "night";
     }
-    else if(date.getHours() >= 6 || date.getHours() < 8){
+    else if(date.getHours() >= 6 && date.getHours() < 8){
       return "dawn"
     }
-    else if(date.getHours() >= 8 || date.getHours() < 17){
+    else if(date.getHours() >= 8 && date.getHours() < 17){
       return "day"
     }
-    else if(date.getHours() >= 17 || date.getHours() < 20){
+    else if(date.getHours() >= 17 && date.getHours() < 20){
       return "dusk"
     }
     else return undefined
-
   }
 
 
@@ -38,6 +39,19 @@ export default function HomeScreen() {
   useEffect( () => {
     setConfigLight(  getLightPreset(time) );
   },[time])
+
+
+  useEffect(() => {
+    const iniciar = async () => {
+      await copiarGtfsSiHaceFalta();
+
+
+
+
+    };
+
+    iniciar()
+  }, []);
 
   return (
       <MapView style={{ flex: 1 }} styleURL="mapbox://styles/mapbox/standard"  rotateEnabled={true}>
