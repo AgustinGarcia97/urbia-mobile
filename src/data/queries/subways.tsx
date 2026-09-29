@@ -1,4 +1,7 @@
 import {getDb} from "@/scripts/sqlite-client";
+import {useDispatch} from "react-redux";
+import {setOptions} from "expo-splash-screen";
+
 
 export const getSubwaysLinesArg = async () => {
     const db = await getDb();
@@ -41,7 +44,7 @@ export const getRouteBySubwayLineArg = async (lines: { route_id: string; route_c
             const shape = await getShapeBySubwayRouteArg(register);
             const coordinates = await getCoordinatesOfSubwayLineArg(shape);
             const route_id = line.route_id;
-            console.log(line.route_id, ":", stop);
+
             route.push({register,shape,coordinates,color,stop,route_id});
         }
     }
