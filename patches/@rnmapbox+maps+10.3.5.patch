@@ -1,0 +1,32 @@
+diff --git a/node_modules/@rnmapbox/maps/android/src/main/java/com/rnmapbox/rnmbx/components/styles/model/RNMBXModels.kt b/node_modules/@rnmapbox/maps/android/src/main/java/com/rnmapbox/rnmbx/components/styles/model/RNMBXModels.kt
+index 610b962..557555b 100644
+--- a/node_modules/@rnmapbox/maps/android/src/main/java/com/rnmapbox/rnmbx/components/styles/model/RNMBXModels.kt
++++ b/node_modules/@rnmapbox/maps/android/src/main/java/com/rnmapbox/rnmbx/components/styles/model/RNMBXModels.kt
+@@ -21,13 +21,16 @@ class RNMBXModels(context: Context?) : AbstractMapFeature(context) {
+     }
+ 
+     private fun applyModels(){
+-        mMapView?.mapView?.getMapboxMap()?.getStyle()?.let { style ->
+-            models?.forEach { (modelId,modelUri) ->
+-                val uri = URI.create(modelUri)
+-                val modelUriWithoutQuery = URI(uri.scheme, uri.userInfo, uri.host, uri.port, uri.path, null, uri.fragment).toString()
+-
+-                style.addStyleModel(modelId, modelUriWithoutQuery)
+-            }
+-        }
+-    }
+-}
+\ No newline at end of file
++              mMapView?.mapView?.getMapboxMap()?.getStyle()?.let { style ->
++                  models?.forEach { (modelId, modelUri) ->
++                      val finalUri = if (modelUri.startsWith("file:")) {
++                          modelUri
++                      } else {
++                          val uri = URI.create(modelUri)
++                          URI(uri.scheme, uri.userInfo, uri.host, uri.port, uri.path, null, uri.fragment).toString()
++                      }
++                      style.addStyleModel(modelId, finalUri)
++                  }
++              }
++          }
++      }
