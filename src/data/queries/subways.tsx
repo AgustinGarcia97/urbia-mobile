@@ -71,7 +71,7 @@ export const getStopsBySubwayLineArg = async  (subway_line:string) => {
     const db = await getDb();
 
     let response = await db.getAllAsync(
-        `  SELECT DISTINCT estacion.stop_id AS estacion_id, estacion.stop_name AS estacion_nombre,
+        `SELECT DISTINCT estacion.stop_id AS estacion_id, estacion.stop_name AS estacion_nombre,
                            estacion.stop_lat AS estacion_lat, estacion.stop_lon AS estacion_lon,
                            boca.stop_id AS boca_id, boca.stop_name AS boca_nombre, boca.stop_lat, boca.stop_lon
            FROM trips t

@@ -1,16 +1,22 @@
-module.exports = {
-  presets: ['module:metro-react-native-babel-preset', 'nativewind/babel'],
-  plugins: [
-    [
-      'module-resolver',
-      {
-        root: ['./'],
-        alias: {
-          '@': './',
-          'tailwind.config': './tailwind.config.js',
-        },
-      },
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: [
+      ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
+      'nativewind/babel',
     ],
-    "react-native-worklets/plugin",
-  ],
+    plugins: [
+      [
+        'module-resolver',
+        {
+          root: ['./'],
+          alias: {
+            '@/assets': './assets',
+            '@': './src',
+            'tailwind.config': './tailwind.config.js',
+          },
+        },
+      ],
+    ],
+  };
 };

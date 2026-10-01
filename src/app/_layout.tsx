@@ -11,9 +11,8 @@ Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN!);
 
 SplashScreen.preventAutoHideAsync();
 
-export default  async function TabLayout() {
-    const dispatch = useDispatch();
-    await getTransportFilterData(dispatch);
+export default   function TabLayout() {
+
   return (
       <Provider store={store}>
           <HomeScreen/>

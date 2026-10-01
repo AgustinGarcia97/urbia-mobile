@@ -4,7 +4,7 @@ export type LightPreset = "dawn" | "day" | "dusk" | "night" | undefined;
 
 const getLightPreset = (date: Date): LightPreset => {
     const h = date.getHours();
-    if (h >= 20 || h < 6) return "day";
+    if (h >= 20 || h < 6) return "night";
     if (h < 8) return "dawn";
     if (h < 17) return "day";
     return "dusk";
