@@ -1,53 +1,48 @@
-import * as Device from 'expo-device';
 import {Camera, MapView, StyleImport} from '@rnmapbox/maps';
-import {useEffect, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
+import {Subway} from "@/components/subway/Subway";
+import {useLightPreset} from "@/hooks/useLightPreset";
+import {useDispatch} from "react-redux";
+import {getTransportFilterData} from "@/data/queries/common";
+import {Train} from "@/components/train/Train";
+import {getDb} from "@/scripts/sqlite-client";
+import {FeatureCollection} from "geojson";
+import {Bus} from "@/components/bus/Bus";
+type Bounds = [[number, number], [number, number]];
 
 export default function HomeScreen() {
 
-  const getLightPreset = (date: Date): LightPreset =>  {
+  const configLight = useLightPreset();
+  const styleConfig = useMemo(
+      () => ({ lightPreset: configLight, showTransitLabels: true }),
+      [configLight]);
+    const mapRef = useRef<MapView>(null);
+    const [visibleBounds, setVisibleBounds] = useState<[[number, number], [number, number]] | null>(null);
+    const [features, setFeatures] = useState<FeatureCollection | undefined>(undefined);
 
-    if(date.getHours() >= 20 || date.getHours() < 6){
-      return "night";
-    }
-    else if(date.getHours() >= 6 || date.getHours() < 8){
-      return "dawn"
-    }
-    else if(date.getHours() >= 8 || date.getHours() < 17){
-      return "day"
-    }
-    else if(date.getHours() >= 17 || date.getHours() < 20){
-      return "dusk"
-    }
-    else return undefined
+    const onMapIdle = async () => {
+        const bounds = await mapRef.current?.getVisibleBounds();
+        if (bounds) setVisibleBounds( bounds as Bounds);
 
-  }
+    };
 
 
-  type LightPreset = "dawn" | "day" | "dusk" | "night"| undefined;
 
-  const [configLight, setConfigLight] = useState<LightPreset>(getLightPreset (new Date));
-  const [time, setTime] = useState(new Date());
+    const dispatch = useDispatch();
+    useEffect(() => {
+        getTransportFilterData(dispatch);
+    }, [dispatch]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTime(new Date());
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [] )
 
-  useEffect( () => {
-    setConfigLight(  getLightPreset(time) );
-  },[time])
 
-  return (
-      <MapView style={{ flex: 1 }} styleURL="mapbox://styles/mapbox/standard"  rotateEnabled={true}>
-        <StyleImport id={"basemap"} existing config={{lightPreset: configLight, showTransitLabels: false  }} />
-        <Camera
-            centerCoordinate={[-58.3816, -34.6037]}
-            zoomLevel={16}
-            pitch={60}
-            heading={45}
-        />
+    return (
+      <MapView ref={mapRef} style={{ flex: 1 }} styleURL="mapbox://styles/mapbox/standard"  rotateEnabled={true}  onMapIdle={onMapIdle}>
+        <StyleImport id={"basemap"} existing config={styleConfig} />
+        <Camera defaultSettings={{ centerCoordinate: [-58.3816, -34.6037], zoomLevel: 16, pitch: 60, heading: 45,  }}/>
+
+          <Train visibleBounds={visibleBounds} />
+          <Subway visibleBounds={visibleBounds}/>
+          <Bus visibleBounds={visibleBounds}/>
       </MapView>
   );
 }

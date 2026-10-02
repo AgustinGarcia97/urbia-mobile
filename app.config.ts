@@ -18,7 +18,12 @@ export default {
         },
         plugins: [
             "@rnmapbox/maps",
-            ["expo-location", { locationWhenInUsePermission: "Mostrar tu posición en el mapa" }]
+            ["expo-location", { locationWhenInUsePermission: "Mostrar tu posición en el mapa" }],
+           [ "expo-sqlite",{  useSQLCipher: true}],
+            [
+                "expo-router"
+            ]
+
         ]
     }
 };
