@@ -1,19 +1,20 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as SQLite from "expo-sqlite";
+import { Asset } from 'expo-asset';
 
 let dbInstance: SQLite.SQLiteDatabase | null = null;
 
 export async function copiarGtfsSiHaceFalta() {
     const carpetaSqlite = FileSystem.documentDirectory + 'SQLite/';
     const destino = carpetaSqlite + 'gtfs.db';
-    const origen = 'file:///sdcard/Android/data/com.sigma.urbia/files/gtfs.db';
 
     const infoDestino = await FileSystem.getInfoAsync(destino);
     if (infoDestino.exists && infoDestino.size > 0) return; // ya está, y de verdad tiene contenido
 
-    const infoOrigen = await FileSystem.getInfoAsync(origen);
-    if (!infoOrigen.exists) {
-        console.log('Todavía no llegó el gtfs.db al almacenamiento público — nada para copiar');
+    const [asset] = await Asset.loadAsync(require('@/data/db/gtfs.db'));
+    const origen = asset.localUri;
+    if (!origen) {
+        console.log('No se pudo resolver el asset de gtfs.db bundleado');
         return;
     }
 

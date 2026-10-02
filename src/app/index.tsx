@@ -7,6 +7,7 @@ import {getTransportFilterData} from "@/data/queries/common";
 import {Train} from "@/components/train/Train";
 import {getDb} from "@/scripts/sqlite-client";
 import {FeatureCollection} from "geojson";
+import {Bus} from "@/components/bus/Bus";
 type Bounds = [[number, number], [number, number]];
 
 export default function HomeScreen() {
@@ -22,12 +23,6 @@ export default function HomeScreen() {
     const onMapIdle = async () => {
         const bounds = await mapRef.current?.getVisibleBounds();
         if (bounds) setVisibleBounds( bounds as Bounds);
-        const result = await mapRef.current?.querySourceFeatures(
-            'composite',
-            ['==', ['get', 'maki'], 'rail-metro'],
-            ['transit_stop_label']
-        );
-        setFeatures(result);
 
     };
 
@@ -45,8 +40,9 @@ export default function HomeScreen() {
         <StyleImport id={"basemap"} existing config={styleConfig} />
         <Camera defaultSettings={{ centerCoordinate: [-58.3816, -34.6037], zoomLevel: 16, pitch: 60, heading: 45,  }}/>
 
-          <Train visibleBounds={visibleBounds} features={features}/>
+          <Train visibleBounds={visibleBounds} />
           <Subway visibleBounds={visibleBounds}/>
+          <Bus visibleBounds={visibleBounds}/>
       </MapView>
   );
 }
