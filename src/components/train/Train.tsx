@@ -41,8 +41,8 @@ type Line = {
 
 
 const TRAIN_MODELS: Record<string, number> = {
-        '0': require('@/assets/models/3d/train/Plataforma-Anden-ARG-1-opt.glb'),
-        '1': require('@/assets/models/3d/train/Plataforma-Anden-ARG-2-opt.glb'),
+        '0': require('@/assets/models/3d/train/Plataforma-Anden-ARG-1-split.glb'),
+        '1': require('@/assets/models/3d/train/Plataforma-Anden-ARG-2-split.glb'),
 
 };
 
@@ -153,7 +153,7 @@ function platformPointsForStation(station: LatLon, trackShape: ShapePoint[]): [P
     ];
 }
 
-function aFeatureCollectionStops(stops: StopProps["stops"], trackShape: ShapePoint[]) {
+export function aFeatureCollectionStops(stops: StopProps["stops"], trackShape: ShapePoint[]) {
     return {
         type: "FeatureCollection" as const,
         features: stops.flatMap(p => {
@@ -230,6 +230,18 @@ export const Train = ({visibleBounds, features}: {
         })();
     }, []);
 
+    const dedupedStopsByLine = useMemo(() => {
+        if (!lines) return [];
+        const vistas = new Set<string>();
+        return lines.map((line: { stops: StopProps['stops'] }) =>
+            line.stops.filter(s => {
+                if (vistas.has(s.estacion_id)) return false;
+                vistas.add(s.estacion_id);
+                return true;
+            })
+        );
+    }, [lines]);
+
     if (!lines) return null;
 
     return (
@@ -244,7 +256,7 @@ export const Train = ({visibleBounds, features}: {
                 color: any;
                 stops: StopProps['stops']
             }, i: any) => {
-                const visibleStops = line.stops.filter(s => isWithinBounds(s.estacion_lat, s.estacion_lon, visibleBounds));
+                const visibleStops = dedupedStopsByLine[i].filter(s => isWithinBounds(s.estacion_lat, s.estacion_lon, visibleBounds));
                 return (
                     <Fragment key={line.route_id}>
                         <ShapeSource id={`tren-${line.route_id}`} shape={aFeatureLinea(line.shape)}>

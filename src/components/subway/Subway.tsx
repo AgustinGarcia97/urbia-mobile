@@ -218,7 +218,7 @@ export function aFeatureLinea(puntos: { shape_pt_lat: number; shape_pt_lon: numb
     };
 }
 
-function aFeatureStation(stops: StopProps["stops"]) {
+export function aFeatureStation(stops: StopProps["stops"]) {
     // Las filas vienen una por boca: me quedo con una por estación
     const porEstacion = new Map<string, StopProps["stops"][number]>();
     for (const s of stops) {
