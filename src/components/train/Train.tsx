@@ -1,9 +1,10 @@
 import {Fragment, useEffect, useMemo, useState} from "react";
 import {Images, LineLayer, ModelLayer, Models, ShapeSource, SymbolLayer} from "@rnmapbox/maps";
 import {getRouteByOneTrainLineArg} from "@/data/queries/trains";
-import {useDispatch} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import {Asset} from 'expo-asset';
 import {FeatureCollection} from "geojson";
+import {setOptions} from "@/redux/slice/optionSlice";
 
 interface StopProps {
     stops: {
@@ -30,20 +31,19 @@ interface StopProps {
     }[]
 }
 
-type Line = {
-    shape: {
-        shape_pt_lat: number;
-        shape_pt_lon: number;
-    }[];
-    route_id: string;
-    color: string;
-};
 
+interface TransportData {
+    tipo: 'subte' | 'tren' | 'bus';
+    linea: string;
+    ramal: string | null;
+    route_id: string;
+    empresa: string | null;
+    destino: string | null;
+}
 
 const TRAIN_MODELS: Record<string, number> = {
         '0': require('@/assets/models/3d/train/Plataforma-Anden-ARG-1-split.glb'),
         '1': require('@/assets/models/3d/train/Plataforma-Anden-ARG-2-split.glb'),
-
 };
 
 const useModelos = () => {
@@ -223,12 +223,18 @@ export const Train = ({visibleBounds, features}: {
         'tren_MIT_MITRE_BME'
     ];
 
+
     useEffect(() => {
         (async () => {
             const route = await getRouteByOneTrainLineArg(trenes, dispatch);
             setLines(route);
+
+
+
         })();
     }, []);
+
+
 
     const dedupedStopsByLine = useMemo(() => {
         if (!lines) return [];
@@ -304,7 +310,6 @@ const Stop = ({stops, index, trackShape}: StopProps & { trackShape: ShapePoint[]
                 />
             </ShapeSource>
         </>
-
     );
 };
 
@@ -324,11 +329,9 @@ const aFeatureCollectionStations = (stops: StopProps["stops"]) => {
     }
 }
 
-
 const Station = ({stops, index}: StopProps) => {
     const shape = useMemo(() => aFeatureCollectionStations(stops), [stops]);
     return (
-
         <ShapeSource shape={shape} id={`${index}`}>
             <SymbolLayer
                 maxZoomLevel={16}
@@ -339,7 +342,6 @@ const Station = ({stops, index}: StopProps) => {
                     textOffset: [0, 1.4],
                     iconImage: 'pin-tren',
                     iconSize: 0.03
-
                 }}/>
         </ShapeSource>
     )

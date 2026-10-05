@@ -19,8 +19,13 @@ export const getRouteBySubwayLineArg = async (lines: { route_id: string; route_c
     let color = ""
 
     for (const line of lines) {
-        let register = await db.getFirstAsync<{ trip_id: string; shape_id: string; route_color: string  }>
-        (`SELECT trip_id, shape_id FROM trips WHERE route_id = ? LIMIT 1`, [line.route_id]);
+        let register = await db.getFirstAsync<{ trip_id: string; shape_id: string; route_color: string;feed_id :string  }>
+        (`SELECT trip_id, shape_id, feed_id FROM trips WHERE route_id = ? LIMIT 1`, [line.route_id]);
+
+        const linea = await db.getFirstAsync<{ route_short_name: string }>(
+            `SELECT route_short_name FROM routes WHERE route_id = ?`,
+            [line.route_id]
+        );
 
         if (register) {
             if(line.route_id === "subte_LineaA"){
@@ -44,8 +49,10 @@ export const getRouteBySubwayLineArg = async (lines: { route_id: string; route_c
             const shape = await getShapeBySubwayRouteArg(register);
             const coordinates = await getCoordinatesOfSubwayLineArg(shape);
             const route_id = line.route_id;
+            const feed_id = register.feed_id;
+            const l = linea?.route_short_name;
 
-            route.push({register,shape,coordinates,color,stop,route_id});
+            route.push({register,shape,coordinates,color,stop,route_id, feed_id, l});
         }
     }
     return route;

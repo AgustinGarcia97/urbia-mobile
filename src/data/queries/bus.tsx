@@ -1,6 +1,6 @@
 import { getDb } from "@/scripts/sqlite-client"
 
-const query_trip_route_id = 'SELECT t.trip_id, t.shape_id\n' +
+const query_trip_route_id = 'SELECT t.trip_id, t.shape_id, t.feed_id, direction_id\n' +
     '  FROM trips t\n' +
     '  JOIN stop_times st ON st.trip_id = t.trip_id\n' +
     '  WHERE t.route_id = ?\n' +
@@ -35,38 +35,48 @@ const bus_frecuency = 'SELECT DISTINCT estacion.stop_id AS estacion_id, estacion
     '  ORDER BY estacion.stop_name, boca.stop_id;'
 
 
+const query_trips_por_sentido = 'WITH conteo AS (\n' +
+    '  SELECT t.trip_id, t.direction_id, t.shape_id, t.trip_headsign, COUNT(*) AS n_paradas\n' +
+    '  FROM trips t JOIN stop_times st ON st.trip_id = t.trip_id\n' +
+    '  WHERE t.route_id = ?\n' +
+    '  GROUP BY t.trip_id\n' +
+    '),\n' +
+    'mejor_por_sentido AS (\n' +
+    '  SELECT *, ROW_NUMBER() OVER (PARTITION BY direction_id ORDER BY n_paradas DESC) AS orden\n' +
+    '  FROM conteo\n' +
+    ')\n' +
+    'SELECT direction_id, trip_id, shape_id, trip_headsign\n' +
+    'FROM mejor_por_sentido WHERE orden = 1\n' +
+    'ORDER BY direction_id;'
+
+export const getBusLinesArg = async  () => {
 
 
 
-const wrapBusData = async  (registers:{route_id:string,color:string}[]) => {
+
     const db = await getDb();
-    let data = [];
+    let buses = await db.getAllAsync<{ route_short_name: string }>(`SELECT route_short_name
+                    FROM routes
+                    WHERE feed_id = 'bus'
+                    `);
 
-    for(const register of registers){
-        const r = await db.getFirstAsync<{trip_id:string, shape_id: string}>(query_trip_route_id, register.route_id);
-
-        if (!r) {
-            console.warn(`Sin trips/shape para route_id: ${register.route_id}`);
-            continue;
-        }
-
-        const route_id = register.route_id;
-        const trip_id = r.trip_id;
-        const shape = await getBusLineShapeData(r.shape_id);
-        const coordinate = getCoordinatesOfBusLineArg(shape);
-        const stops = await getBusStations(r.trip_id);
-        const color = '#d001ff';
-        const frecuency = await getBusFrecuency(r.trip_id);
-
-        data.push({route_id, trip_id, shape, coordinate, stops, color, frecuency});
+    const data = ['252A']//buses.map((b) => b.route_short_name);
 
 
 
-    }
-    return data;
 
+    const placeholders = data.map(() => "?").join(",");
 
+    const registers = await db.getAllAsync<{ route_id: string; route_short_name: string; color: string; agency_name: string }>(
+        `SELECT r.route_id, r.route_short_name, a.agency_name
+         FROM routes r
+                  LEFT JOIN agency a ON a.agency_id = r.agency_id
+         WHERE r.feed_id = 'bus' AND r.route_short_name  in (${placeholders});`, data
+    )
+
+    return await wrapBusData(registers);
 }
+
 
 const getBusLineShapeData = async (shape_id: string) => {
     const db = await getDb();
@@ -89,47 +99,60 @@ const getBusFrecuency = async (trip_id: string) => {
 }
 
 
-export const getBusLinesArg = async  () => {
 
-    const buses: string[] = [
-        "bus_100",
-        "bus_101",
-        "bus_102",
-        "bus_103",
-        "bus_1036",
-        "bus_1037",
-        "bus_1038",
-        "bus_1039",
-        "bus_104",
-        "bus_1040",
-        "bus_1042",
-        "bus_1043",
-        "bus_1044",
-        "bus_105",
-        "bus_1050",
-        "bus_106",
-        "bus_1063",
-        "bus_107",
-        "bus_108",
-        "bus_1087",
-        "bus_1088",
-        "bus_1089",
-        "bus_109",
-        "bus_1090",
-        "bus_1091",
-        "bus_1107",
-        "bus_111",
-        "bus_1111",
-        "bus_1114",
-        "bus_1115",
-
-    ];
+const wrapBusData = async  (registers:{route_id: string; route_short_name: string; color: string; agency_name: string}[]) => {
     const db = await getDb();
-    const placeholders = buses.map(() => "?").join(",");
+    let data = [];
 
-    const registers = await db.getAllAsync<{route_id:string, color:string}>(
-        `SELECT route_id  FROM routes WHERE route_id IN (${placeholders})`, buses
-    )
+    for(const register of registers){
+        const r = await db.getFirstAsync<{trip_id:string, shape_id: string, feed_id:string, direction_id:string}>(query_trip_route_id, register.route_id);
 
-    return await wrapBusData(registers);
+        if (!r) {
+            console.warn(`Sin trips/shape para route_id: ${register.route_id}`);
+            continue;
+        }
+
+        const sentidos = await db.getAllAsync<{ direction_id: number; trip_id: string; shape_id: string; trip_headsign: string }>(
+            query_trips_por_sentido, [register.route_id]
+        );
+
+        for (const s of sentidos) {
+            const shape = await getBusLineShapeData(s.shape_id);
+            const coordinate = getCoordinatesOfBusLineArg(shape);
+            const stops = await getBusStations(s.trip_id);
+            const color = register.color ?? '#999999';
+            const frecuency = await getBusFrecuency(r.trip_id);
+            const l = register.route_short_name;
+            const feed_id = r.feed_id;
+            const agency_id = register.agency_name;
+
+
+            data.push({
+                route_id: register.route_id,
+                trip_id: s.trip_id,
+                direction_id: s.direction_id,
+                trip_headsign: s.trip_headsign,
+                shape, coordinate, stops, color,
+                route_short_name: register?.route_short_name,
+                feed_id: feed_id,
+                agency_id: agency_id,
+                frecuency: frecuency,
+
+            });
+
+
+
+
+
+        }
+        return data;
+
+    }
 }
+
+
+
+
+
+
+

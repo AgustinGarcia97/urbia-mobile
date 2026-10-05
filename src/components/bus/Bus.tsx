@@ -3,6 +3,9 @@ import {getRouteByOneTrainLineArg} from "@/data/queries/trains";
 import {getBusLinesArg} from "@/data/queries/bus";
 import {Images, LineLayer, ModelLayer, Models, ShapeSource, SymbolLayer} from "@rnmapbox/maps";
 import {Asset} from "expo-asset";
+import {useDispatch} from "react-redux";
+import {setOptions} from "@/redux/slice/optionSlice";
+
 
 
 interface StopProps {
@@ -29,8 +32,19 @@ interface StopProps {
         estacion_lon: number
     }[]
 }
+
+interface TransportData {
+    tipo: 'subte' | 'tren' | 'bus';
+    linea: string;
+    ramal: string | null;
+    route_id: string;
+    empresa: string | null;
+    destino: string | null;
+}
+
+
 const EARTH_RADIUS_M = 6371000;
-const BUS_STOP_OFFSET_METERS = 3; // separación respecto al eje de la calle, ajustar según ancho de vereda
+const BUS_STOP_OFFSET_METERS =-5; // separación respecto al eje de la calle, ajustar según ancho de vereda
 
 
 const BUS_MODELS = {
@@ -134,13 +148,19 @@ const useModelos = () => {
 export const Bus = ({visibleBounds}:{visibleBounds: Bounds | null}) => {
     const modelos = useModelos();
     const [lines, setLines] = useState<any>(null);
+    const dispatch = useDispatch();
+
     useEffect(() => {
         (async () => {
             const route = await getBusLinesArg();
             setLines(route);
+
         })();
     }, []);
+
+
     if (!lines) return null;
+
 
     return (
         <>
@@ -150,7 +170,8 @@ export const Bus = ({visibleBounds}:{visibleBounds: Bounds | null}) => {
 
             {modelos && <Models models={modelos}/>}
             {
-                lines.map((line :{
+                lines.filter((line: any) => line.direction_id === 1).map((line :{
+                    direction_id: string;
                     shape: {shape_pt_lat: number, shape_pt_lon: number}[],
                     route_id: string,
                     color: string,
@@ -159,8 +180,9 @@ export const Bus = ({visibleBounds}:{visibleBounds: Bounds | null}) => {
                 }, i:number) => {
                     const visibleStops = line.stops.filter(s => isWithinBounds(s.estacion_lat, s.estacion_lon, visibleBounds));
                     return(
-                        <Fragment key={line.route_id}>
-                            <ShapeSource id={`bus-trazo-${line.route_id}`} shape={aFeatureBusLine(line.shape)}>
+
+                        <Fragment key={`${line.route_id}-${line.direction_id}`}>
+                            <ShapeSource id={`bus-trazo-${line.route_id}-${line.direction_id}`} shape={aFeatureBusLine(line.shape)}>
                                 <LineLayer id={`bus-trazo-${i}`} style={{lineColor: line.color, lineWidth: 6, lineEmissiveStrength: 1}}/>
                             </ShapeSource>
                             <Stop stops={visibleStops} index={i} trackShape={line.shape}/>
