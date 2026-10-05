@@ -22,8 +22,9 @@ export const optionSlice = createSlice({
     initialState,
     reducers: {
         setOptions: (state, action: PayloadAction<TransportData[]> ) => {
-            state.options = action.payload;
-        }
+            state.options.push(...action.payload);
+
+        },
     }
 })
 
