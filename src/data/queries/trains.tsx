@@ -1,7 +1,7 @@
 import {getDb} from "@/scripts/sqlite-client";
 
 //Query 2 - trip de route_id
-const query = 'SELECT t.trip_id, t.shape_id\n' +
+const query = 'SELECT t.trip_id, t.shape_id,  t.feed_id\n' +
     '  FROM trips t\n' +
     '  JOIN stop_times st ON st.trip_id = t.trip_id\n' +
     '  WHERE t.route_id = ?\n' +
@@ -24,11 +24,11 @@ const getStations ='  SELECT DISTINCT estacion.stop_id   AS estacion_id,\n' +
     '  WHERE t.route_id = ?\n' +
     '  ORDER BY estacion.stop_name;\n'
 
-const getTimeLine = '  SELECT t.trip_id, t.service_id, t.trip_headsign, MIN(st.arrival_time) AS hora_salida\n' +
+const getTimeLine = '  SELECT t.trip_id, t.service_id, t.trip_headsign, t.direction_id, MIN(st.arrival_time) AS hora_salida\n' +
     '  FROM trips t\n' +
     '  JOIN stop_times st ON st.trip_id = t.trip_id\n' +
     '  WHERE t.route_id = ?\n' +
-    '  GROUP BY t.trip_id, t.service_id, t.trip_headsign\n' +
+    '  GROUP BY t.trip_id, t.service_id, t.trip_headsign, t.direction_id\n' +
     '  ORDER BY t.service_id, hora_salida;'
 
 
@@ -37,11 +37,16 @@ const wrapTrainData = async (registers: {route_id:string , route_color: string}[
     let data = [];
     for (const register of registers) {
 
-        const r = await db.getFirstAsync<{ trip_id: string; shape_id: string }>(query, [register.route_id]);
+        const r = await db.getFirstAsync<{ trip_id: string; shape_id: string; feed_id:string }>(query, [register.route_id]);
+        const linea = await db.getFirstAsync<{ route_short_name: string }>(
+            `SELECT route_short_name FROM routes WHERE route_id = ?`,
+            [register.route_id]
+        );
         if (!r) {
             console.warn(`Sin trips/shape para route_id: ${register.route_id}`);
             continue;
         }
+
 
         const route_id = register.route_id;
         const shape = await getTrainLineShapeData(r.shape_id);
@@ -49,8 +54,11 @@ const wrapTrainData = async (registers: {route_id:string , route_color: string}[
         const stops = await getTrainStations(route_id);
         const color = `#${register.route_color}`;
         const timeline = await getTimelineTrain(route_id);
+        const feed_id = r.feed_id;
+        const l = linea?.route_short_name;
 
-        data.push({r,shape,coordinates,color,route_id, stops,timeline});
+
+        data.push({r,shape,coordinates,color,route_id, stops,timeline,feed_id,l});
     }
 
     return data;

@@ -9,6 +9,8 @@ import {getTransportFilterData} from "@/data/queries/common";
 import {useDispatch, useSelector} from "react-redux";
 import {RootState, store} from "@/redux/store";
 import {getRouteByOneTrainLineArg} from "@/data/queries/trains";
+import {prepare} from "react-native-svg/lib/typescript/web/utils/prepare";
+import {setOptions} from "@/redux/slice/optionSlice";
 
 interface StopProps {
     stops: {
@@ -24,6 +26,16 @@ interface StopProps {
     index: number,
     letra?: string
 }
+
+interface TransportData {
+    tipo: 'subte' | 'tren' | 'bus';
+    linea: string;
+    ramal: string | null;
+    route_id: string;
+    empresa: string | null;
+    destino: string | null;
+}
+
 type Bounds = [[number, number], [number, number]]; // [[rightLon, topLat], [leftLon, bottomLat]]
 const BOUNDS_PADDING_DEG = 0.05; // margen extra, ajustable
 
@@ -82,13 +94,13 @@ export const Subway = ({ visibleBounds }: { visibleBounds: Bounds | null }) => {
 
 const Linea = ({ visibleBounds }: { visibleBounds: Bounds | null }) => {
     const [lines, setLines] = useState<any>(null);
-
     useEffect(() => {
         (async () => {
             const route = await queriesScript();
             setLines(route);
         })();
     }, []);
+
 
     if (!lines) return null;
     return (
